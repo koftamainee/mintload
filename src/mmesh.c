@@ -1,112 +1,93 @@
-#include "mintload/mintload.h"
+#include "mintload/mmesh.h"
 #include "utils.h"
-#include <stdio.h>
+#include <string.h>
 
-enum MintResult mintload_MmeshGetMemoryRequirements(const char* path, MintMeshMemoryRequirements* req) {
-    if (!path || !req) return MINT_ERR_INVALID_DATA;
+#define MMESH_HDR 64
+#define SM_SIZE  52
 
-    FILE* f = fopen(path, "rb");
-    if (!f) return MINT_ERR_IO;
-
-    uint8_t header[64];
-    size_t n = fread(header, 1, 64, f);
-    fclose(f);
-
-    if (n < 64) return MINT_ERR_INVALID_DATA;
-
-    uint32_t magic = read_u32_le(header);
-    if (magic != MINT_MMESH_MAGIC) return MINT_ERR_INVALID_DATA;
-
-    uint32_t version = read_u32_le(header + 4);
-    if (version != MINT_MMESH_VERSION) return MINT_ERR_UNSUPPORTED_VERSION;
-
-    uint32_t vertexCount = read_u32_le(header + 12);
-    uint32_t indexCount = read_u32_le(header + 16);
-    uint32_t vertexStride = read_u32_le(header + 20);
-    uint32_t indexFormat = read_u32_le(header + 24);
-
-    req->vertexBufferSize = (size_t)vertexCount * vertexStride;
-    req->indexBufferSize = (indexCount > 0) ? (size_t)indexCount * (indexFormat == 0 ? 2 : 4) : 0;
-    req->vertexAlignment = 4;
-    req->indexAlignment = (indexFormat == 0) ? 2 : 4;
-    return MINT_SUCCESS;
+static uint32_t smagic(void) {
+    const uint8_t m[4] = {'M','M','S','H'};
+    return read_u32_at(m);
 }
 
-enum MintResult mintload_MmeshLoad(
-    const char* path,
-    MintMesh* mesh,
-    void* vertexBuffer, size_t vertexBufferSize,
-    void* indexBuffer, size_t indexBufferSize)
-{
-    if (!path || !mesh) return MINT_ERR_INVALID_DATA;
+MintloadResult mintload_MmeshLoad(const char* path, MintMesh* out) {
+    if (!path || !out) return MINTLOAD_ERR_INVALID_DATA;
 
-    MintMeshMemoryRequirements req;
-    enum MintResult r = mintload_MmeshGetMemoryRequirements(path, &req);
-    if (r != MINT_SUCCESS) return r;
+    MintloadResult r = mintload_map_file(path, &out->_m);
+    if (r != MINTLOAD_SUCCESS) return r;
 
-    if (vertexBufferSize < req.vertexBufferSize) return MINT_ERR_BUFFER_TOO_SMALL;
-    if (indexBufferSize < req.indexBufferSize) return MINT_ERR_BUFFER_TOO_SMALL;
-    if ((uintptr_t)vertexBuffer & (req.vertexAlignment - 1)) return MINT_ERR_MISALIGNED_BUFFER;
-    if (indexBuffer && ((uintptr_t)indexBuffer & (req.indexAlignment - 1))) return MINT_ERR_MISALIGNED_BUFFER;
+    const uint8_t* base = (const uint8_t*)out->_m.base;
+    size_t size = out->_m.size;
 
-    FILE* f = fopen(path, "rb");
-    if (!f) return MINT_ERR_IO;
+    if (size < MMESH_HDR) { mintload_unmap_file(&out->_m); return MINTLOAD_ERR_INVALID_DATA; }
 
-    uint8_t header[64];
-    size_t n = fread(header, 1, 64, f);
-    if (n != 64) {
-        fclose(f);
-        return MINT_ERR_INVALID_DATA;
+    uint32_t magic  = read_u32_at(base);
+    uint32_t ver    = read_u32_at(base + 4);
+    if (magic != smagic() || ver != 1) {
+        mintload_unmap_file(&out->_m);
+        return MINTLOAD_ERR_INVALID_DATA;
     }
 
-    uint32_t magic = read_u32_le(header);
-    uint32_t version = read_u32_le(header + 4);
-    if (magic != MINT_MMESH_MAGIC || version != MINT_MMESH_VERSION) {
-        fclose(f);
-        return MINT_ERR_INVALID_DATA;
+    uint32_t sm_count = read_u32_at(base + 8);
+    uint32_t flags    = read_u32_at(base + 12);
+    uint32_t vtx_tot  = read_u32_at(base + 16);
+    uint32_t idx_tot  = read_u32_at(base + 20);
+    uint32_t lod_cnt  = read_u32_at(base + 24);
+
+    uint32_t lod_first[4];
+    for (int i = 0; i < 4; i++) lod_first[i] = read_u32_at(base + 28 + i * 4);
+
+    size_t table_bytes = (size_t)sm_count * SM_SIZE;
+    size_t data_off    = MMESH_HDR + table_bytes;
+
+    if (size < data_off) { mintload_unmap_file(&out->_m); return MINTLOAD_ERR_INVALID_DATA; }
+
+    size_t vtx_bytes = 0;
+    for (uint32_t i = 0; i < sm_count; i++) {
+        uint32_t vc = read_u32_at(base + MMESH_HDR + i * SM_SIZE + 4);
+        uint16_t vs = read_u16_at(base + MMESH_HDR + i * SM_SIZE + 12);
+        vtx_bytes += (size_t)vc * vs;
     }
 
-    uint32_t flags = read_u32_le(header + 8);
-    uint32_t vertexCount = read_u32_le(header + 12);
-    uint32_t indexCount = read_u32_le(header + 16);
-    uint32_t vertexStride = read_u32_le(header + 20);
-    uint32_t indexFormat = read_u32_le(header + 24);
-    float bmin[3], bmax[3];
-    for (int i = 0; i < 3; ++i) {
-        bmin[i] = read_f32_le(header + 28 + i*4);
-        bmax[i] = read_f32_le(header + 40 + i*4);
-    }
+    out->vertex_data = base + data_off;
+    out->index_data  = idx_tot ? (base + data_off + vtx_bytes) : NULL;
+    out->vertex_count       = vtx_tot;
+    out->index_count        = idx_tot;
+    out->sub_mesh_count     = sm_count;
+    out->lod_count          = lod_cnt;
+    for (int i = 0; i < 4; i++) out->lod_first_submesh[i] = lod_first[i];
 
-    mesh->magic = MINT_MMESH_MAGIC;
-    mesh->version = MINT_MMESH_VERSION;
-    mesh->flags = flags;
-    mesh->vertexCount = vertexCount;
-    mesh->indexCount = indexCount;
-    mesh->vertexStride = vertexStride;
-    mesh->indexFormat = indexFormat;
-    for (int i = 0; i < 3; ++i) {
-        mesh->boundingMin[i] = bmin[i];
-        mesh->boundingMax[i] = bmax[i];
-    }
+    return MINTLOAD_SUCCESS;
+}
 
-    fseek(f, 64, SEEK_SET);
-    size_t vsize = req.vertexBufferSize;
-    if (vsize > 0 && vertexBuffer) {
-        n = fread(vertexBuffer, 1, vsize, f);
-        if (n != vsize) {
-            fclose(f);
-            return MINT_ERR_INVALID_DATA;
-        }
-    }
+void mintload_MmeshUnload(MintMesh* mesh) {
+    if (mesh) mintload_unmap_file(&mesh->_m);
+}
 
-    if (req.indexBufferSize > 0 && indexBuffer) {
-        n = fread(indexBuffer, 1, req.indexBufferSize, f);
-        if (n != req.indexBufferSize) {
-            fclose(f);
-            return MINT_ERR_INVALID_DATA;
-        }
-    }
+uint32_t mintload_MmeshSubMeshCount(const MintMesh* mesh) {
+    return mesh ? mesh->sub_mesh_count : 0;
+}
 
-    fclose(f);
-    return MINT_SUCCESS;
+MintSubMesh mintload_MmeshSubMesh(const MintMesh* mesh, uint32_t index) {
+    MintSubMesh sm;
+    memset(&sm, 0, sizeof(sm));
+    if (!mesh || index >= mesh->sub_mesh_count) return sm;
+
+    const uint8_t* p = (const uint8_t*)mesh->_m.base + MMESH_HDR + index * SM_SIZE;
+
+    sm.flags         = read_u32_at(p);
+    sm.vertex_count  = read_u32_at(p + 4);
+    sm.vertex_offset = read_u32_at(p + 8);
+    sm.vertex_stride = read_u16_at(p + 12);
+    sm.index_count   = read_u32_at(p + 14);
+    sm.index_offset  = read_u32_at(p + 18);
+    sm.mat_index     = read_i32_at(p + 24);
+    sm.bounding_min[0] = read_f32_at(p + 28);
+    sm.bounding_min[1] = read_f32_at(p + 32);
+    sm.bounding_min[2] = read_f32_at(p + 36);
+    sm.bounding_max[0] = read_f32_at(p + 40);
+    sm.bounding_max[1] = read_f32_at(p + 44);
+    sm.bounding_max[2] = read_f32_at(p + 48);
+
+    return sm;
 }

@@ -1,18 +1,31 @@
 cmake_minimum_required(VERSION 3.15)
-project(mintload VERSION 1.0.0 LANGUAGES C)
+project(mintload VERSION 1.0.0 LANGUAGES C CXX)
 
 option(BUILD_SHARED_LIBS "Build mintload as shared library" OFF)
-option(MINTLOAD_BUILD_TESTS "Build mintload tests" ON)
+option(MINTLOAD_BUILD_EXAMPLES "Build examples" OFF)
+option(MINTLOAD_ENABLE_CPP "Enable C++ wrapper API (mintload.hpp)" OFF)
 
 set(HEADERS
+    include/mintload/base.h
     include/mintload/mintload.h
     include/mintload/mmesh.h
     include/mintload/mmat.h
+    include/mintload/mprop.h
+    include/mintload/mskel.h
+    include/mintload/manim.h
 )
 
+if(MINTLOAD_ENABLE_CPP)
+    list(APPEND HEADERS include/mintload/mintload.hpp)
+endif()
+
 set(SOURCES
+    src/mmap.c
     src/mmesh.c
     src/mmat.c
+    src/mprop.c
+    src/mskel.c
+    src/manim.c
 )
 
 add_library(mintload ${SOURCES})
@@ -73,15 +86,14 @@ install(FILES
 
 export(TARGETS mintload FILE ${CMAKE_CURRENT_BINARY_DIR}/mintloadTargets.cmake NAMESPACE mintload::)
 
-if(MINTLOAD_BUILD_TESTS)
-    enable_testing()
-    add_executable(test_mintload
-        tests/test_mmesh.c
-        tests/test_mmat.c
-        tests/test_utils.c
-        tests/test_mintload.c
-    )
-    target_link_libraries(test_mintload mintload)
-    target_include_directories(test_mintload PRIVATE include)
-    add_test(NAME mintload_test COMMAND test_mintload)
+if(MINTLOAD_BUILD_EXAMPLES)
+    add_executable(mtl-c examples/main.c)
+    target_link_libraries(mtl-c PRIVATE mintload)
+    target_include_directories(mtl-c PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+    if(MINTLOAD_ENABLE_CPP)
+        add_executable(mtl-cpp examples/main.cpp)
+        target_link_libraries(mtl-cpp PRIVATE mintload)
+        target_include_directories(mtl-cpp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    endif()
 endif()
