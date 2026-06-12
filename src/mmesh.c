@@ -37,6 +37,9 @@ MintloadResult mintload_MmeshLoad(const char* path, MintMesh* out) {
     uint32_t lod_first[4];
     for (int i = 0; i < 4; i++) lod_first[i] = read_u32_at(base + 28 + i * 4);
 
+    if (sm_count > (size - MMESH_HDR) / SM_SIZE) {
+        mintload_unmap_file(&out->_m); return MINTLOAD_ERR_INVALID_DATA;
+    }
     size_t table_bytes = (size_t)sm_count * SM_SIZE;
     size_t data_off    = MMESH_HDR + table_bytes;
 
@@ -46,7 +49,19 @@ MintloadResult mintload_MmeshLoad(const char* path, MintMesh* out) {
     for (uint32_t i = 0; i < sm_count; i++) {
         uint32_t vc = read_u32_at(base + MMESH_HDR + i * SM_SIZE + 4);
         uint16_t vs = read_u16_at(base + MMESH_HDR + i * SM_SIZE + 12);
-        vtx_bytes += (size_t)vc * vs;
+        if (vs > 256 || vc > 1 << 24) {
+            mintload_unmap_file(&out->_m); return MINTLOAD_ERR_INVALID_DATA;
+        }
+        size_t entry = (size_t)vc * vs;
+        if (entry > size - data_off - vtx_bytes) {
+            mintload_unmap_file(&out->_m); return MINTLOAD_ERR_INVALID_DATA;
+        }
+        vtx_bytes += entry;
+    }
+
+    size_t idx_bytes = (size_t)idx_tot * 4;
+    if (idx_tot && (idx_bytes > size - data_off - vtx_bytes)) {
+        mintload_unmap_file(&out->_m); return MINTLOAD_ERR_INVALID_DATA;
     }
 
     out->vertex_data = base + data_off;

@@ -249,6 +249,7 @@ struct Prefab {
         else
             return p;
 
+        if (len + 2 > sizeof(buf)) return p;
         buf[len] = '/';
         buf[len + 1] = '\0';
 
@@ -275,6 +276,8 @@ struct Prefab {
 
         char buf[512];
         size_t parentLen = stem - assetDir;
+
+        if (parentLen + stemLen + 6 >= sizeof(buf)) return p;
         memcpy(buf, assetDir, parentLen);
         memcpy(buf + parentLen, stem, stemLen);
         memcpy(buf + parentLen + stemLen, ".mprop", 6);
@@ -283,6 +286,7 @@ struct Prefab {
         p.prop_ = Prop::Load(buf);
         if (!p.prop_.IsValid()) return p;
 
+        if (len + 1 + stemLen + 6 >= sizeof(buf)) return p;
         memcpy(buf, assetDir, len);
         buf[len] = '/';
         memcpy(buf + len + 1, stem, stemLen);
@@ -303,10 +307,12 @@ struct Prefab {
         if (matCount > maxMats) return p;
 
         size_t baseLen = len + 1;
+        if (baseLen >= sizeof(buf)) return p;
         memcpy(buf, assetDir, len);
         buf[len] = '/';
         for (uint32_t i = 0; i < matCount; i++) {
             int n = snprintf(buf + baseLen, sizeof(buf) - baseLen, "%u.mmat", i);
+            if (n < 0 || (size_t)(baseLen + n) >= sizeof(buf)) return p;
             buf[baseLen + n] = '\0';
             p.materials_[i] = Material::Load(buf);
         }
@@ -316,6 +322,7 @@ struct Prefab {
         if (sc > maxSkels) return p;
         for (uint32_t i = 0; i < sc; i++) {
             int n = snprintf(buf + baseLen, sizeof(buf) - baseLen, "%u.mskel", i);
+            if (n < 0 || (size_t)(baseLen + n) >= sizeof(buf)) return p;
             buf[baseLen + n] = '\0';
             p.skeletons_[i] = Skeleton::Load(buf);
         }
@@ -325,6 +332,7 @@ struct Prefab {
         if (ac > maxAnims) return p;
         for (uint32_t i = 0; i < ac; i++) {
             int n = snprintf(buf + baseLen, sizeof(buf) - baseLen, "%u.manim", i);
+            if (n < 0 || (size_t)(baseLen + n) >= sizeof(buf)) return p;
             buf[baseLen + n] = '\0';
             p.animations_[i] = Animation::Load(buf);
         }

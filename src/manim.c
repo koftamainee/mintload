@@ -36,6 +36,22 @@ MintloadResult mintload_ManimLoad(const char* path, MintAnimation* out) {
     out->duration = read_f64_at(base + off);
     out->channel_count = read_u32_at(base + off + 8);
 
+    uint64_t ch = off + 12;
+    for (uint32_t i = 0; i < out->channel_count; i++) {
+        if (ch + 14 > size) {
+            mintload_unmap_file(&out->_m); return MINTLOAD_ERR_INVALID_DATA;
+        }
+        uint32_t fc = read_u32_at(base + ch + 10);
+        uint16_t co = read_u16_at(base + ch + 8);
+        if (fc > (size - ch - 14) / 4 || co > 16) {
+            mintload_unmap_file(&out->_m); return MINTLOAD_ERR_INVALID_DATA;
+        }
+        ch += 14 + (size_t)fc * 4 + (size_t)fc * co * 4;
+    }
+    if (ch > size) {
+        mintload_unmap_file(&out->_m); return MINTLOAD_ERR_INVALID_DATA;
+    }
+
     out->_cache[0] = 0;
     out->_cache[1] = (uint64_t)-1;
 
@@ -91,12 +107,15 @@ MintAnimChannel mintload_ManimChannel(const MintAnimation* anim, uint32_t index)
     cache[1] = index;
 
 parse:;
+    if (off + 14 > anim->_m.size) return c;
     const uint8_t* p = base + off;
     c.node_index    = read_u32_at(p);
     c.property      = p[4];
     c.interpolation = p[5];
     c.components    = read_u16_at(p + 8);
     c.frame_count   = read_u32_at(p + 10);
+    size_t ch_end = off + 14 + (size_t)c.frame_count * 4 + (size_t)c.frame_count * c.components * 4;
+    if (ch_end > anim->_m.size) return c;
     c.times  = (const float*)(p + 14);
     c.values = (const float*)(p + 14 + (size_t)c.frame_count * 4);
 

@@ -28,6 +28,23 @@ MintloadResult mintload_MskelLoad(const char* path, MintSkeleton* out) {
     }
 
     out->bone_count = read_u32_at(base + 8);
+
+    uint64_t off = MSKEL_HDR;
+    for (uint32_t i = 0; i < out->bone_count; i++) {
+        if (off + 4 > size) {
+            mintload_unmap_file(&out->_m); return MINTLOAD_ERR_INVALID_DATA;
+        }
+        uint32_t nl = read_u32_at(base + off);
+        if (nl > 1024) {
+            mintload_unmap_file(&out->_m); return MINTLOAD_ERR_INVALID_DATA;
+        }
+        uint32_t rec = 4 + ((nl + 3) & ~3) + 4 + 64;
+        if (off + rec > size) {
+            mintload_unmap_file(&out->_m); return MINTLOAD_ERR_INVALID_DATA;
+        }
+        off += rec;
+    }
+
     out->_cache[0] = 0;
     out->_cache[1] = (uint64_t)-1;
 
@@ -77,11 +94,14 @@ MintBone mintload_MskelBone(const MintSkeleton* skel, uint32_t index) {
     cache[1] = index;
 
 parse:;
+    if (off + 4 > skel->_m.size) return b;
     const uint8_t* p = base + off;
     uint32_t nl = read_u32_at(p);
+    if (nl > 1024) return b;
     b.name     = (const char*)(p + 4);
     b.name_len = nl;
     uint32_t padded = ((nl + 3) & ~3);
+    if (off + 4 + padded + 4 + 64 > skel->_m.size) return b;
     b.parent_index = read_i32_at(p + 4 + padded);
     for (int j = 0; j < 16; j++)
         b.inverse_bind_matrix[j] = read_f32_at(p + 4 + padded + 4 + j * 4);

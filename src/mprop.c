@@ -32,6 +32,18 @@ MintloadResult mintload_MpropLoad(const char* path, MintProp* out) {
     out->skeleton_count = read_u32_at(base + 12);
     out->animation_count = read_u32_at(base + 16);
 
+    uint64_t off = MPROP_HDR;
+    for (uint32_t i = 0; i < out->entry_count; i++) {
+        if (off + 80 > size) {
+            mintload_unmap_file(&out->_m); return MINTLOAD_ERR_INVALID_DATA;
+        }
+        uint32_t nl = read_u32_at(base + off + 76);
+        off += MPROP_ENTRY_FIXED + ((nl + 3) & ~3);
+    }
+    if (off > size) {
+        mintload_unmap_file(&out->_m); return MINTLOAD_ERR_INVALID_DATA;
+    }
+
     out->_cache[0] = 0;
     out->_cache[1] = (uint64_t)-1;
 
@@ -83,6 +95,7 @@ MintPropEntry mintload_MpropEntry(const MintProp* prop, uint32_t index) {
     cache[1] = index;
 
 parse:;
+    if (off + MPROP_ENTRY_FIXED > prop->_m.size) return e;
     const uint8_t* p = base + off;
     e.sub_mesh_index  = read_i32_at(p);
     e.material_index  = read_i32_at(p + 4);
@@ -91,6 +104,8 @@ parse:;
         e.transform[j] = read_f32_at(p + 12 + j * 4);
     e.name     = (const char*)(p + MPROP_ENTRY_FIXED);
     e.name_len = read_u32_at(p + 76);
+    uint32_t entry_end = (uint32_t)(off + MPROP_ENTRY_FIXED + ((e.name_len + 3) & ~3));
+    if (entry_end > prop->_m.size) { memset(&e, 0, sizeof(e)); return e; }
 
     return e;
 }

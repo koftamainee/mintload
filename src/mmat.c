@@ -37,6 +37,10 @@ MintloadResult mintload_MmatLoad(const char* path, MintMaterial* out) {
     out->flags        = read_u32_at(base + 48);
     out->texture_count = read_u32_at(base + 52);
 
+    if (out->texture_count > (size - MMAT_HDR) / 8) {
+        mintload_unmap_file(&out->_m); return MINTLOAD_ERR_INVALID_DATA;
+    }
+
     out->textures = (const MintTextureSlot*)(base + MMAT_HDR);
 
     return MINTLOAD_SUCCESS;
