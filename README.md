@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-orange.svg)](LICENSE)
 
 **mintload** is a `c11`/`c++17` **blazingly fast** and **zero-allocation** runtime loader for assets produced by [**mint**](https://github.com/koftamainee/mint).  
-Written for usage in [**Mantle engine**](https://github.com/koftamainee/mantle)
+Written for usage in [**Mantle engine**](https://github.com/koftamainee/mantle). <br>
 Reads `.mmesh`, `.mmat`, `.mprop`, `.mskel`, `.manim` directly from disk via `mmap`/`MapViewOfFile` — no heap, no mallocs, no JSON, no dependencies. **Cross-platform** (Linux + Windows).
 
 ---
