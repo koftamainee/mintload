@@ -96,6 +96,8 @@ struct Material {
 
     bool     IsValid()       const { return m_._m.base != nullptr; }
     uint32_t TextureCount()  const { return m_.texture_count; }
+    float    NormalScale()   const { return m_.normal_scale; }
+    float    EmissiveStrength() const { return m_.emissive_strength; }
     Span<const MintTextureSlot> Textures() const { return {m_.textures, m_.texture_count}; }
     uint32_t AlphaMode()     const { return (m_.flags >> 1) & 3; }
     float    AlphaCutoff()   const { return m_.alpha_cutoff; }

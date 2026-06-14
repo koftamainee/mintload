@@ -3,7 +3,7 @@
 #include <string.h>
 
 #define MPROP_HDR 20
-#define MPROP_ENTRY_FIXED 80
+#define MPROP_ENTRY_FIXED 84
 
 static uint32_t smagic(void) {
     const uint8_t m[4] = {'M','P','R','P'};
@@ -34,10 +34,10 @@ MintloadResult mintload_MpropLoad(const char* path, MintProp* out) {
 
     uint64_t off = MPROP_HDR;
     for (uint32_t i = 0; i < out->entry_count; i++) {
-        if (off + 80 > size) {
+        if (off + MPROP_ENTRY_FIXED + 4 > size) {
             mintload_unmap_file(&out->_m); return MINTLOAD_ERR_INVALID_DATA;
         }
-        uint32_t nl = read_u32_at(base + off + 76);
+        uint32_t nl = read_u32_at(base + off + 80);
         off += MPROP_ENTRY_FIXED + ((nl + 3) & ~3);
     }
     if (off > size) {
@@ -76,8 +76,8 @@ MintPropEntry mintload_MpropEntry(const MintProp* prop, uint32_t index) {
             goto parse;
         }
         {
-            uint32_t nl = read_u32_at(base + off + 76);
-            off += MPROP_ENTRY_FIXED + ((nl + 3) & ~3);
+        uint32_t nl = read_u32_at(base + off + 80);
+        off += MPROP_ENTRY_FIXED + ((nl + 3) & ~3);
             i++;
         }
     } else {
@@ -86,7 +86,7 @@ MintPropEntry mintload_MpropEntry(const MintProp* prop, uint32_t index) {
     }
 
     while (i < index) {
-        uint32_t nl = read_u32_at(base + off + 76);
+        uint32_t nl = read_u32_at(base + off + 80);
         off += MPROP_ENTRY_FIXED + ((nl + 3) & ~3);
         i++;
     }
@@ -97,13 +97,13 @@ MintPropEntry mintload_MpropEntry(const MintProp* prop, uint32_t index) {
 parse:;
     if (off + MPROP_ENTRY_FIXED > prop->_m.size) return e;
     const uint8_t* p = base + off;
-    e.sub_mesh_index  = read_i32_at(p);
+    e.sub_mesh_index  = read_u32_at(p);
     e.material_index  = read_i32_at(p + 4);
     e.skeleton_index  = read_i32_at(p + 8);
     for (int j = 0; j < 16; j++)
-        e.transform[j] = read_f32_at(p + 12 + j * 4);
+        e.transform[j] = read_f32_at(p + 16 + j * 4);
     e.name     = (const char*)(p + MPROP_ENTRY_FIXED);
-    e.name_len = read_u32_at(p + 76);
+    e.name_len = read_u32_at(p + 80);
     uint32_t entry_end = (uint32_t)(off + MPROP_ENTRY_FIXED + ((e.name_len + 3) & ~3));
     if (entry_end > prop->_m.size) { memset(&e, 0, sizeof(e)); return e; }
 

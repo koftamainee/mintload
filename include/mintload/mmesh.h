@@ -14,6 +14,7 @@ extern "C" {
 #define MINTLOAD_ATTR_JOINTS0   (1u << 4)
 #define MINTLOAD_ATTR_WEIGHTS0  (1u << 5)
 #define MINTLOAD_ATTR_TANGENT   (1u << 6)
+#define MINTLOAD_ATTR_TEXCOORD1 (1u << 7)
 
 typedef struct {
     uint32_t  flags;

@@ -8,7 +8,7 @@ extern "C" {
 #endif
 
 typedef struct {
-    int32_t      sub_mesh_index;
+    uint32_t     sub_mesh_index;
     int32_t      material_index;
     int32_t      skeleton_index;
     float        transform[16];

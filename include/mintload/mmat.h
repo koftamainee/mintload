@@ -34,6 +34,8 @@ typedef struct {
     float                 alpha_cutoff;
     uint32_t              flags;
     uint32_t              texture_count;
+    float                 normal_scale;
+    float                 emissive_strength;
     const MintTextureSlot* textures;
     MintloadMapping       _m;
 } MintMaterial;

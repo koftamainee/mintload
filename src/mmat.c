@@ -33,9 +33,11 @@ MintloadResult mintload_MmatLoad(const char* path, MintMaterial* out) {
     out->roughness  = read_f32_at(base + 28);
     for (int i = 0; i < 3; i++)
         out->emissive[i] = read_f32_at(base + 32 + i * 4);
-    out->alpha_cutoff = read_f32_at(base + 44);
-    out->flags        = read_u32_at(base + 48);
-    out->texture_count = read_u32_at(base + 52);
+    out->alpha_cutoff      = read_f32_at(base + 44);
+    out->flags             = read_u32_at(base + 48);
+    out->texture_count     = read_u32_at(base + 52);
+    out->normal_scale      = read_f32_at(base + 56);
+    out->emissive_strength = read_f32_at(base + 60);
 
     if (out->texture_count > (size - MMAT_HDR) / 8) {
         mintload_unmap_file(&out->_m); return MINTLOAD_ERR_INVALID_DATA;

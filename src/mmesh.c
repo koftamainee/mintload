@@ -94,8 +94,8 @@ MintSubMesh mintload_MmeshSubMesh(const MintMesh* mesh, uint32_t index) {
     sm.vertex_count  = read_u32_at(p + 4);
     sm.vertex_offset = read_u32_at(p + 8);
     sm.vertex_stride = read_u16_at(p + 12);
-    sm.index_count   = read_u32_at(p + 14);
-    sm.index_offset  = read_u32_at(p + 18);
+    sm.index_count   = read_u32_at(p + 16);
+    sm.index_offset  = read_u32_at(p + 20);
     sm.mat_index     = read_i32_at(p + 24);
     sm.bounding_min[0] = read_f32_at(p + 28);
     sm.bounding_min[1] = read_f32_at(p + 32);
