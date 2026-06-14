@@ -78,9 +78,9 @@ static void load_and_print_mesh(const char* path) {
     printf("  sub-meshes (%u):\n", sm_count);
     for (uint32_t i = 0; i < sm_count && i < 5; i++) {
         MintSubMesh sm = mintload_MmeshSubMesh(&mesh, i);
-        printf("    [%u] flags=0x%x vc=%u vo=%u vs=%u ic=%u io=%u mat=%d  bb=[%.2f..%.2f,%.2f..%.2f,%.2f..%.2f]\n",
+        printf("    [%u] flags=0x%x vc=%u vo=%u vs=%u ic=%u io=%u  bb=[%.3f..%.3f,%.3f..%.3f,%.3f..%.3f]\n",
                i, sm.flags, sm.vertex_count, sm.vertex_offset, sm.vertex_stride,
-               sm.index_count, sm.index_offset, sm.mat_index,
+               sm.index_count, sm.index_offset,
                sm.bounding_min[0], sm.bounding_max[0],
                sm.bounding_min[1], sm.bounding_max[1],
                sm.bounding_min[2], sm.bounding_max[2]);

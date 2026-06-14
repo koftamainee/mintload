@@ -3,7 +3,7 @@
 #include <string.h>
 
 #define MMESH_HDR 64
-#define SM_SIZE  52
+#define SM_SIZE  48
 
 static uint32_t smagic(void) {
     const uint8_t m[4] = {'M','M','S','H'};
@@ -94,15 +94,14 @@ MintSubMesh mintload_MmeshSubMesh(const MintMesh* mesh, uint32_t index) {
     sm.vertex_count  = read_u32_at(p + 4);
     sm.vertex_offset = read_u32_at(p + 8);
     sm.vertex_stride = read_u16_at(p + 12);
-    sm.index_count   = read_u32_at(p + 16);
-    sm.index_offset  = read_u32_at(p + 20);
-    sm.mat_index     = read_i32_at(p + 24);
-    sm.bounding_min[0] = read_f32_at(p + 28);
-    sm.bounding_min[1] = read_f32_at(p + 32);
-    sm.bounding_min[2] = read_f32_at(p + 36);
-    sm.bounding_max[0] = read_f32_at(p + 40);
-    sm.bounding_max[1] = read_f32_at(p + 44);
-    sm.bounding_max[2] = read_f32_at(p + 48);
+    sm.index_count    = read_u32_at(p + 16);
+    sm.index_offset   = read_u32_at(p + 20);
+    sm.bounding_min[0] = read_f32_at(p + 24);
+    sm.bounding_min[1] = read_f32_at(p + 28);
+    sm.bounding_min[2] = read_f32_at(p + 32);
+    sm.bounding_max[0] = read_f32_at(p + 36);
+    sm.bounding_max[1] = read_f32_at(p + 40);
+    sm.bounding_max[2] = read_f32_at(p + 44);
 
     return sm;
 }

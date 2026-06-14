@@ -82,7 +82,7 @@ struct Mesh {
     Span<const uint8_t> RawIndexData()  const { return {m_.index_data,  TotalIndexBytes()};  }
 
     const uint8_t* SubMeshVertexData(const MintSubMesh& sm) const {
-        return m_.vertex_data + sm.vertex_offset;
+        return m_.vertex_data + (size_t)sm.vertex_offset * sm.vertex_stride;
     }
 
     const uint8_t* SubMeshIndexData(const MintSubMesh& sm) const {

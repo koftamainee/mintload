@@ -37,8 +37,8 @@ int main(int argc, char** argv) {
     uint32_t sm_i = 0;
     for (const auto& SM : Mesh) {
         if (sm_i >= 5) { printf("    ... (%u more)\n", Mesh.SubMeshCount() - 5); break; }
-        printf("    [%u] flags=0x%x vc=%u ic=%u mat=%d\n",
-               sm_i, SM.flags, SM.vertex_count, SM.index_count, SM.mat_index);
+        printf("    [%u] flags=0x%x vc=%u ic=%u\n",
+               sm_i, SM.flags, SM.vertex_count, SM.index_count);
         sm_i++;
     }
 

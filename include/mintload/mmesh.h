@@ -23,7 +23,6 @@ typedef struct {
     uint16_t  vertex_stride;
     uint32_t  index_count;
     uint32_t  index_offset;
-    int32_t   mat_index;
     float     bounding_min[3];
     float     bounding_max[3];
 } MintSubMesh;
