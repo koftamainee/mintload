@@ -59,13 +59,35 @@ struct Mesh {
 
     bool     IsValid()      const { return m_._m.base != nullptr; }
     uint32_t VertexCount()  const { return m_.vertex_count; }
-    Span<const uint8_t> VertexData() const { return {m_.vertex_data, m_.vertex_count}; }
     uint32_t IndexCount()   const { return m_.index_count; }
-    Span<const uint8_t> IndexData()  const { return {m_.index_data, m_.index_count}; }
     uint32_t SubMeshCount() const { return m_.sub_mesh_count; }
     MintSubMesh SubMeshAt(uint32_t i) const { return mintload_MmeshSubMesh(&m_, i); }
     uint32_t LodCount()     const { return m_.lod_count; }
     const uint32_t* LodFirstSubmesh() const { return m_.lod_first_submesh; }
+
+    size_t TotalVertexBytes() const {
+        size_t total = 0;
+        for (uint32_t i = 0; i < m_.sub_mesh_count; i++) {
+            auto sm = mintload_MmeshSubMesh(&m_, i);
+            total += (size_t)sm.vertex_count * sm.vertex_stride;
+        }
+        return total;
+    }
+
+    size_t TotalIndexBytes() const {
+        return (size_t)m_.index_count * 4;
+    }
+
+    Span<const uint8_t> RawVertexData() const { return {m_.vertex_data, TotalVertexBytes()}; }
+    Span<const uint8_t> RawIndexData()  const { return {m_.index_data,  TotalIndexBytes()};  }
+
+    const uint8_t* SubMeshVertexData(const MintSubMesh& sm) const {
+        return m_.vertex_data + sm.vertex_offset;
+    }
+
+    const uint8_t* SubMeshIndexData(const MintSubMesh& sm) const {
+        return m_.index_data + sm.index_offset;
+    }
 
     auto begin() const { return CIter<MintSubMesh, MintMesh, mintload_MmeshSubMesh>{&m_, 0}; }
     auto end()   const { return CIter<MintSubMesh, MintMesh, mintload_MmeshSubMesh>{&m_, m_.sub_mesh_count}; }
