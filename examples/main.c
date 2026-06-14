@@ -180,7 +180,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    printf("=== Prefab: %s ===\n", prop_path);
+    printf("=== Prop: %s ===\n", prop_path);
     printf("  entries=%u skeletons=%u animations=%u\n",
            prop.entry_count, prop.skeleton_count, prop.animation_count);
 

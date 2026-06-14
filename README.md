@@ -54,11 +54,11 @@ int main(int argc, char** argv) {
 #include <string_view>
 
 int main(int argc, char** argv) {
-    auto Prefab = Mintload::Prefab::Load(argv[1]);
-    if (!Prefab.IsValid()) return 1;
+    auto Prop = Mintload::Prop::Load(argv[1]);
+    if (!Prop.IsValid()) return 1;
 
-    std::cout << "entries: " << Prefab.EntryCount() << "\n";
-    for (const auto& Entry : Prefab) {
+    std::cout << "entries: " << Prop.EntryCount() << "\n";
+    for (const auto& Entry : Prop) {
         std::cout << "  \"" << std::string_view(Entry.name, Entry.name_len)
                   << "\" mesh=" << Entry.sub_mesh_index
                   << " mat=" << Entry.material_index << "\n";
@@ -81,7 +81,6 @@ Detailed examples live in [`examples/`](examples/).
 | `.mprop`    | `mintload_MpropLoad` / `Prop::Load` | entries, skeleton/animation counts |
 | `.mskel`    | `mintload_MskelLoad` / `Skeleton::Load` | bones, hierarchy, inverse bind matrices |
 | `.manim`    | `mintload_ManimLoad` / `Animation::Load` | channels, keyframes |
-| Prefab      | `Prefab::Load(propPath)` | loads everything — mesh + materials + skeletons + animations in one call |
 
 All C functions return `MintloadResult` (zero = success).  
 All C++ types are move-only, no exceptions, no heap allocation.
